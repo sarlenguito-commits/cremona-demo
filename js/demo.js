@@ -9,8 +9,11 @@ import * as cal from "./calendario.js";
 
 const MARCA = "cr-demo-sembrado";
 // Si cambian las personas o los datos de ejemplo, se sube la versión: los navegadores que ya tenían la demo
-// borran sus datos de prueba y cargan los nuevos una vez. (2 = "Abril" pasó a ser "Valentín", 12/10/2026)
-const VERSION = "2";
+// borran sus datos de prueba y cargan los nuevos una vez. (2 = "Abril" pasó a ser "Valentín";
+// 3 = checklists de la moza con la puesta a punto del salón y encargos "entregados";
+// 4 = Valentín admin general, cobros de mesas y mapa del salón;
+// 5 = marca, carta y local reales de Cremona Coffee & Brunch; todo el 12/10/2026)
+const VERSION = "5";
 const guardar = (clave, docs) => localStorage.setItem(clave, JSON.stringify(Object.fromEntries(docs.map((d) => [d.id, d]))));
 
 // Fecha y hora (ISO) de un día a una hora dada.
@@ -74,8 +77,8 @@ export function sembrarDemo() {
         guardar("cr-demo-registros", registros(hoy));
 
         guardar("cr-demo-notasTurno", [
-            { id: "turno-demo-1", local: "plaza", fecha: iso(ayer), cuando: a_las(ayer, 15, 50), turno: "manana", persona: "valentin",
-              texto: "Quedaron 2 porciones de lemon pie y media chocotorta en la heladera de atrás. La leche de almendras se terminó.", uid: "demo-valentin" },
+            { id: "turno-demo-1", local: "centro", fecha: iso(ayer), cuando: a_las(ayer, 13, 50), turno: "manana", persona: "mica",
+              texto: "Quedaron 2 porciones de Lemon Pie y medio Matilda lingote en la heladera de atrás. La leche de almendra se terminó.", uid: "demo-mica" },
             { id: "turno-demo-2", local: "centro", fecha: iso(hoy), cuando: a_las(hoy, 9, 20), turno: "manana", persona: "mica",
               texto: "La cafetera hace un ruido raro al calentar la leche: ya le avisé a Carolina. La señora de la torta de cumpleaños pasa a las 18.", uid: "demo-mica" }
         ]);
@@ -83,19 +86,19 @@ export function sembrarDemo() {
         guardar("cr-demo-agenda", [
             { id: "agenda-demo-1", fecha: iso(hoy), local: "centro", para: "todas", cuando: dias(-1),
               texto: "Dejar lugar en la heladera: llegan las tortas para el cumpleaños de las 18", uid: "demo-carolina" },
-            { id: "agenda-demo-2", fecha: iso(cal.sumarDias(hoy, 3)), local: "plaza", para: "valentin", cuando: dias(-1),
-              texto: "Armar la pizarra nueva con la torta de la semana", uid: "demo-carolina" }
+            { id: "agenda-demo-2", fecha: iso(cal.sumarDias(hoy, 3)), local: "centro", para: "juli", cuando: dias(-1),
+              texto: "Probar la torta del mes nueva antes de ponerla en la vitrina", uid: "demo-carolina" }
         ]);
 
         guardar("cr-demo-pedidosClientes", [
-            { id: "pedido-demo-1", cliente: "Marta", telefono: "11 5555-0101", producto: "Torta Rogel para 15 personas", cantidad: 1,
+            { id: "pedido-demo-1", cliente: "Marta", telefono: "11 5555-0101", producto: "Rogel entero para 15 personas", cantidad: 1,
               pago: "Transferencia", nota: "Con el cartelito \"Feliz cumple, Lucas\"", local: "centro", pagoEstado: "sena", sena: 10000, total: 0,
               estado: "pendiente", persona: "mica", quien: "mica", creado: dias(-2), actualizado: dias(-2), uid: "demo-mica" },
-            { id: "pedido-demo-2", cliente: "Rodrigo", telefono: "11 5555-0202", producto: "Docena de alfajores de maicena", cantidad: 2,
-              pago: "Efectivo", nota: "", local: "plaza", pagoEstado: "total", sena: 0, total: 18000,
-              estado: "llego", persona: "valentin", quien: "valentin", creado: dias(-3), actualizado: dias(-1), uid: "demo-valentin" },
-            { id: "pedido-demo-3", cliente: "Paula", telefono: "", producto: "Cheesecake de frutos rojos entero", cantidad: 1,
-              pago: "", nota: "Lo quiere para el sábado", local: "plaza", pagoEstado: "nada", sena: 0, total: 0,
+            { id: "pedido-demo-2", cliente: "Rodrigo", telefono: "11 5555-0202", producto: "Caja de 12 Alfajores Cremona", cantidad: 2,
+              pago: "Efectivo", nota: "", local: "centro", pagoEstado: "total", sena: 0, total: 18000,
+              estado: "llego", persona: "mica", quien: "mica", creado: dias(-3), actualizado: dias(-1), uid: "demo-mica" },
+            { id: "pedido-demo-3", cliente: "Paula", telefono: "", producto: "Cheesecake New York entero", cantidad: 1,
+              pago: "", nota: "Lo quiere para el sábado", local: "centro", pagoEstado: "nada", sena: 0, total: 0,
               estado: "pendiente", persona: "juli", quien: "juli", creado: dias(-1), actualizado: dias(-1), uid: "demo-juli" }
         ]);
 
@@ -116,7 +119,7 @@ export function sembrarDemo() {
         guardar("cr-demo-recordatorios", [
             { id: "rec-demo-1", persona: "mica", texto: "Comprar velitas de cumpleaños antes del viernes", duracion: "1s", fecha: "",
               vence: dias(6), autora: "carolina", creado: dias(-1), editado: "", uid: "demo-carolina" },
-            { id: "rec-demo-2", persona: "juli", texto: "Devolverle a Valentín el táper de las medialunas", duracion: "sin", fecha: "",
+            { id: "rec-demo-2", persona: "juli", texto: "Pedir más leche de almendra (se terminó el sábado)", duracion: "sin", fecha: "",
               vence: "", autora: "valentin", creado: dias(-2), editado: "", uid: "demo-valentin" },
             { id: "rec-demo-3", persona: "carolina", texto: "Llamar al técnico por la cafetera del Centro", duracion: "3d", fecha: "",
               vence: dias(2), autora: "mica", creado: dias(0), editado: "", uid: "demo-mica" }
@@ -135,12 +138,11 @@ export function sembrarDemo() {
         // ---------- Funciones traídas de Restix (js/extras.js) ----------
         // Stock: algunos insumos ya en el mínimo, para que se vean los faltantes.
         const stock = {
-            centro: { crema: 3, leche: 18, cafe: 5, manteca: 4, harina: 25, azucar: 8, huevos: 2, vasos: 6 },
-            plaza: { crema: 7, leche: 12, cafe: 2, manteca: 3, harina: 15, azucar: 6, huevos: 4, vasos: 2 }
+            centro: { crema: 3, leche: 18, cafe: 2, manteca: 4, harina: 25, azucar: 8, huevos: 2, vasos: 6 }
         };
         guardar("cr-demo-stock", Object.entries(stock).flatMap(([local, cosas]) => Object.entries(cosas).map(([insumo, cantidad], i) => ({
-            id: `${local}_${insumo}`, local, insumo, cantidad, persona: local === "centro" ? "mica" : "valentin",
-            actualizado: a_las(ayer, 9 + i, 10), uid: `demo-${local === "centro" ? "mica" : "valentin"}`
+            id: `${local}_${insumo}`, local, insumo, cantidad, persona: "mica",
+            actualizado: a_las(ayer, 9 + i, 10), uid: "demo-mica"
         }))));
 
         // Producción de hoy: con horas relativas a ahora (una urgente, una cerca, una tranquila y una lista).
@@ -154,12 +156,12 @@ export function sembrarDemo() {
             persona, creado: dias(-1), listoPor: listo ? "juli" : "", listoEn: listo ? dias(0) : "", uid: `demo-${persona}`
         });
         guardar("cr-demo-produccion", [
-            encargo("prod-demo-1", "centro", 15, "Torta Rogel para 15 personas", 1, "Cartel \"Feliz cumple, Lucas\"", "mica"),
+            encargo("prod-demo-1", "centro", 15, "Rogel entero para 15 personas", 1, "Cartel \"Feliz cumple, Lucas\"", "mica"),
             encargo("prod-demo-2", "centro", 50, "Docena de medialunas de manteca", 3, "", "mica"),
-            encargo("prod-demo-3", "centro", 200, "Lemon pie entero", 1, "Para llevar, en caja", "carolina"),
-            encargo("prod-demo-4", "centro", -60, "Alfajores de maicena", 24, "", "juli", true),
-            encargo("prod-demo-5", "plaza", 35, "Cheesecake de frutos rojos", 1, "Sin base de galletita", "mica"),
-            encargo("prod-demo-6", "plaza", 150, "Budín de limón", 2, "", "valentin")
+            encargo("prod-demo-3", "centro", 200, "Lemon Pie entero", 1, "Para llevar, en caja", "carolina"),
+            encargo("prod-demo-4", "centro", -60, "Alfajores Cremona", 24, "", "juli", true),
+            encargo("prod-demo-5", "centro", 35, "Cheesecake New York", 1, "Sin base de galletita", "mica"),
+            encargo("prod-demo-6", "centro", 150, "Budín de limón", 2, "", "juli")
         ]);
 
         // Cierres de caja de ayer: uno cerró bien y otro con faltante.
@@ -167,9 +169,53 @@ export function sembrarDemo() {
             { id: `centro_${iso(ayer)}_manana`, local: "centro", fecha: iso(ayer), turno: "manana", fondo: 20000, vendido: 185000,
               efectivo: 82000, transferencias: 71000, tarjetas: 52000, gastos: 0, diferencia: 0, nota: "",
               persona: "mica", cuando: a_las(ayer, 14, 35), uid: "demo-mica" },
-            { id: `plaza_${iso(ayer)}_tarde`, local: "plaza", fecha: iso(ayer), turno: "tarde", fondo: 20000, vendido: 143500,
+            { id: `centro_${iso(ayer)}_tarde`, local: "centro", fecha: iso(ayer), turno: "tarde", fondo: 20000, vendido: 143500,
               efectivo: 68000, transferencias: 40000, tarjetas: 51000, gastos: 3000, diferencia: -1500, nota: "Pagué $3.000 de hielo",
               persona: "mica", cuando: a_las(ayer, 20, 15), uid: "demo-mica" }
+        ]);
+
+        // ---------- Salón y comandas (js/salon.js) ----------
+        // Centro: mesa 3 con un tostado en cocina, mesa 5 con wafles listos para llevar, mesa 7 con algo sin mandar.
+        // Mesa 2 con una comanda demorada (roja), para que se vea en cocina.
+        const hace = (min) => new Date(hoy.getTime() - min * 60000).toISOString();
+        const linea = (id, itemId, nombre, precio, cantidad, cocina = false, comanda = "") => ({ id, itemId, nombre, precio, cantidad, cocina, comanda });
+        const mesa = (id, local, numero, abierta, moza, pedido) => ({
+            id, local, numero, estado: "abierta", pedido, abiertaPor: moza, abiertaEn: hace(abierta),
+            cerradaPor: "", cerradaEn: "", total: 0, uid: `demo-${moza}`
+        });
+        guardar("cr-demo-mesas", [
+            mesa("mesa-demo-3", "centro", 3, 25, "mica", [
+                linea("l1", "cafe-latte", "Latte", 5700, 2), linea("l2", "viennoiserie-medialuna-de-manteca", "Medialuna de manteca", 4400, 3),
+                linea("l3", "opciones-saladas-tostado-de-jamon-y-queso", "Tostado de jamón y queso", 10300, 1, true, "comanda-demo-1")]),
+            mesa("mesa-demo-5", "centro", 5, 40, "mica", [
+                linea("l4", "cafe-cappuccino", "Cappuccino", 5700, 2), linea("l5", "opciones-saladas-avocado-toast", "Avocado toast", 14000, 2, true, "comanda-demo-2")]),
+            mesa("mesa-demo-7", "centro", 7, 4, "mica", [
+                linea("l6", "bebidas-licuado-de-banana", "Licuado de banana", 7200, 1), linea("l7", "brunch-huevos-benedictinos", "Huevos benedictinos", 11500, 1, true)]),
+            mesa("mesa-demo-p2", "centro", 2, 35, "mica", [
+                linea("l8", "especiales-sin-cafe-te-en-hebras", "Té en hebras", 5300, 2), linea("l9", "brunch-bagel-de-salmon-y-queso-crema", "Bagel de salmón y queso crema", 21800, 2, true, "comanda-demo-3")])
+        ]);
+        // Cobros: una cuenta que la moza pasó a caja (la ve Nati) y una mesa que la moza ya cobró en efectivo.
+        const cuenta = (id, numero, min, pedido, extra) => ({
+            ...mesa(id, "centro", numero, min + 40, "mica", pedido), total: pedido.reduce((s, l) => s + l.precio * l.cantidad, 0), ...extra
+        });
+        const conCobros = JSON.parse(localStorage.getItem("cr-demo-mesas"));
+        const cobrada = new Date(hoy.getTime() - 60 * 60000);
+        Object.assign(conCobros, Object.fromEntries([
+            cuenta("mesa-demo-pc", 6, 3, [linea("l10", "cafe-flat-white", "Flat White", 5700, 2), linea("l11", "tortas-lemon-pie", "Lemon Pie", 13800, 2)],
+                { estado: "por-cobrar", pasadaPor: "mica", pasadaEn: hace(3) }),
+            cuenta("mesa-demo-cob", 4, 60, [linea("l12", "especiales-sin-cafe-chocolate-caliente-submarino", "Chocolate caliente / Submarino", 6300, 1), linea("l13", "viennoiserie-croissant-clasico", "Croissant clásico", 4700, 2)],
+                { estado: "cerrada", cerradaPor: "mica", cerradaEn: cobrada.toISOString(),
+                  cobro: { medio: "efectivo", por: "mica", en: cobrada.toISOString(), fecha: iso(cobrada), turno: cal.turnoActual("centro", cobrada) } })
+        ].map((m) => [m.id, m])));
+        localStorage.setItem("cr-demo-mesas", JSON.stringify(conCobros));
+        const comanda = (id, local, numero, mesaId, items, enviada, estado, listoPor = "", listoHace = 0) => ({
+            id, local, numero, mesaId, items, estado, moza: "mica", enviada: hace(enviada),
+            listoPor, listoEn: listoPor ? hace(listoHace) : "", servidoPor: "", servidoEn: "", uid: "demo-mica"
+        });
+        guardar("cr-demo-comandas", [
+            comanda("comanda-demo-1", "centro", 3, "mesa-demo-3", [{ nombre: "Tostado de jamón y queso", cantidad: 1 }], 9, "en-cocina"),
+            comanda("comanda-demo-2", "centro", 5, "mesa-demo-5", [{ nombre: "Avocado toast", cantidad: 2 }], 22, "listo", "juli", 2),
+            comanda("comanda-demo-3", "centro", 2, "mesa-demo-p2", [{ nombre: "Bagel de salmón y queso crema", cantidad: 2 }], 28, "en-cocina")
         ]);
 
         guardar("cr-demo-notasDuena", [

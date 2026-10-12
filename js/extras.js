@@ -8,6 +8,8 @@
 import { PERSONAS, LOCALES, INSUMOS, PRODUCCION, CAJA } from "./config.js";
 import * as cal from "./calendario.js";
 import * as datos from "./datos.js";
+import { resumenSalonDuena, cobradoEnTurno } from "./salon.js";
+import { puede as puedeEquipo } from "./equipo.js";
 
 // Lo que se usa de app.js: { estado, render, aviso, esc, nombre, esDuena, nuevoId, hora }
 let c;
@@ -49,12 +51,13 @@ export function menuExtras() {
     return [
         ["produccion", "cake", "Producción del día"],
         ["stock", "packages", "Stock"],
-        ...(c.esDuena() || puesto() === "moza" ? [["caja", "cash", "Cierre de caja"]] : [])
-    ];
+        ["caja", "cash", "Cierre de caja"]
+    ].filter(([id]) => puede(id));
 }
 
 // Botones para elegir local (y "Todos" si se pide).
 function filtroLocales(actual, atributo, { todos = false } = {}) {
+    if (Object.keys(LOCALES).length < 2) return ""; // con un solo local no hace falta elegir
     const opciones = [...(todos ? [["todos", "Todos"]] : []), ...Object.entries(LOCALES).map(([id, l]) => [id, l.nombre])];
     return `
     <div class="filtros">
@@ -84,7 +87,7 @@ export function vistaStock() {
     <section class="encabezado">
         <h1>📦 Stock</h1>
         <p>Cuánto queda de cada cosa. Tocá − cuando se usa y + cuando llega mercadería. Lo que queda en el mínimo
-        aparece como faltante en "Hoy" de quien está en el local y en Actividad de Carolina.</p>
+        aparece como faltante en "Hoy" de quien está en el local y en Actividad de los encargados.</p>
     </section>
     ${filtroLocales(local, "data-stock-local")}
     ${bajos ? `<p class="stock__resumen">⚠️ ${bajos === 1 ? "1 cosa para pedir" : `${bajos} cosas para pedir`} en ${LOCALES[local].nombre}</p>` : ""}
@@ -101,9 +104,9 @@ export function vistaStock() {
                     ${bajo ? `<span class="stock__alerta">⚠️ Hay que pedir</span>` : ""}
                 </div>
                 <div class="stock__control">
-                    <button class="stock__boton" data-stock-cambiar="${i.id}" data-delta="${-i.paso}" aria-label="Restar ${i.paso} de ${esc(i.nombre)}">−</button>
+                    <button class="stock__boton" data-stock-cambiar="${i.id}" data-delta="${-i.paso}" ${puede("ajustarStock") ? "" : "disabled"} aria-label="Restar ${i.paso} de ${esc(i.nombre)}">−</button>
                     <span class="stock__cantidad">${q ?? "—"}<small>${esc(i.unidad)}</small></span>
-                    <button class="stock__boton" data-stock-cambiar="${i.id}" data-delta="${i.paso}" aria-label="Sumar ${i.paso} de ${esc(i.nombre)}">+</button>
+                    <button class="stock__boton" data-stock-cambiar="${i.id}" data-delta="${i.paso}" ${puede("ajustarStock") ? "" : "disabled"} aria-label="Sumar ${i.paso} de ${esc(i.nombre)}">+</button>
                 </div>
             </li>`;
         }).join("")}
@@ -111,6 +114,7 @@ export function vistaStock() {
 }
 
 async function cambiarStock(insumoId, delta) {
+    if (!puede("ajustarStock")) return c.aviso("No tenés permiso para cambiar el stock");
     const local = c.estado.localStock || (c.esDuena() ? Object.keys(LOCALES)[0] : localDeHoy());
     const insumo = INSUMOS.find((i) => i.id === insumoId);
     const antes = cantidad(local, insumoId) ?? 0;
@@ -127,10 +131,14 @@ async function cambiarStock(insumoId, delta) {
 // Producción del día
 // ============================================
 
+// Estados de un encargo: "pendiente" (cocina lo tiene que hacer) → "listo" (para entregar) → "entregado" (se lo llevó el cliente).
+const puede = (permiso) => puedeEquipo(permiso, c.estado.persona);
+const terminado = (p) => p.estado === "listo" || p.estado === "entregado";
+
 const minutosQueFaltan = (p) => Math.round((new Date(`${p.fecha}T${p.hora}`) - ahora()) / 60000);
 
 function nivel(p) {
-    if (p.estado === "listo" || p.fecha !== hoyIso()) return "";
+    if (terminado(p) || p.fecha !== hoyIso()) return "";
     const m = minutosQueFaltan(p);
     if (m <= PRODUCCION.MINUTOS_ROJO) return "rojo";
     if (m <= PRODUCCION.MINUTOS_AMARILLO) return "amarillo";
@@ -147,21 +155,31 @@ function textoTiempo(p) {
 
 const formProdVacio = (local) => ({ fecha: hoyIso(), hora: "", producto: "", cantidad: "1", local, nota: "" });
 
-function tarjetaProduccion(p, { compacta = false } = {}) {
-    const listo = p.estado === "listo";
+// compacta = resumen en "Hoy"; entrega = resumen de la moza con el botón "Entregado".
+function tarjetaProduccion(p, { compacta = false, entrega = false } = {}) {
+    const listo = terminado(p);
+    const entregado = p.estado === "entregado";
     return `
-    <article class="prod prod--${nivel(p) || "normal"} ${listo ? "is-listo" : ""}">
+    <article class="prod prod--${nivel(p) || "normal"} ${entregado ? "is-entregado" : listo ? "is-listo" : ""}">
         <p class="prod__hora">${esc(p.hora)}</p>
         <div class="prod__cuerpo">
             <p class="prod__producto">${esc(p.cantidad)} × ${esc(p.producto)}</p>
-            <p class="prod__meta">${esc(LOCALES[p.local]?.nombre || "")}${listo
-                ? ` · ✅ Listo${p.listoPor ? ` (${esc(c.nombre(p.listoPor))}, ${c.hora(p.listoEn)})` : ""}`
+            <p class="prod__meta">${esc(LOCALES[p.local]?.nombre || "")}${entregado
+                ? ` · 📦 Entregado${p.entregadoPor ? ` (${esc(c.nombre(p.entregadoPor))}, ${c.hora(p.entregadoEn)})` : ""}`
+                : listo
+                ? ` · ✅ Listo para entregar${p.listoPor ? ` (${esc(c.nombre(p.listoPor))}, ${c.hora(p.listoEn)})` : ""}`
                 : textoTiempo(p) ? ` · ${textoTiempo(p)}` : ""}</p>
             ${!compacta && p.nota ? `<p class="prod__nota">🗒️ ${esc(p.nota)}</p>` : ""}
             ${!compacta ? `<p class="prod__meta">Anotó ${esc(c.nombre(p.persona))}</p>` : ""}
         </div>
-        ${compacta ? "" : listo
-            ? `<button class="boton boton--suave" data-prod-deshacer="${p.id}">Deshacer</button>`
+        ${entrega ? `<button class="boton" data-prod-entregado="${p.id}">📦 Entregado</button>`
+            : compacta ? "" : entregado
+            ? `<button class="boton boton--suave" data-prod-a-listo="${p.id}">Deshacer</button>`
+            : listo
+            ? `<div class="prod__acciones">
+                <button class="boton" data-prod-entregado="${p.id}">📦 Entregado</button>
+                <button class="boton boton--suave" data-prod-deshacer="${p.id}">Deshacer</button>
+            </div>`
             : `<div class="prod__acciones">
                 <button class="boton" data-prod-listo="${p.id}">✓ Listo</button>
                 <button class="producto__editar" data-prod-borrar="${p.id}" aria-label="Borrar ${esc(p.producto)}">🗑️</button>
@@ -178,8 +196,9 @@ export function vistaProduccion() {
     if (!e.formProd) e.formProd = formProdVacio(filtro === "todos" ? Object.keys(LOCALES)[0] : filtro);
     const f = e.formProd;
     const delDia = e.produccion.filter((p) => p.fecha === fecha && (filtro === "todos" || p.local === filtro));
-    const pendientes = delDia.filter((p) => p.estado !== "listo").sort(ordenPorHora);
+    const pendientes = delDia.filter((p) => !terminado(p)).sort(ordenPorHora);
     const listos = delDia.filter((p) => p.estado === "listo").sort(ordenPorHora);
+    const entregados = delDia.filter((p) => p.estado === "entregado").sort(ordenPorHora);
     const esHoy = fecha === hoyIso();
 
     return `
@@ -198,8 +217,13 @@ export function vistaProduccion() {
     </section>
     ${listos.length ? `
     <section class="momento">
-        <h2 class="momento__titulo">Listos</h2>
+        <h2 class="momento__titulo">🎂 Encargos listos para entregar</h2>
         ${listos.map((p) => tarjetaProduccion(p)).join("")}
+    </section>` : ""}
+    ${entregados.length ? `
+    <section class="momento">
+        <h2 class="momento__titulo">📦 Entregados</h2>
+        ${entregados.map((p) => tarjetaProduccion(p)).join("")}
     </section>` : ""}
     <form class="formulario" id="form-produccion">
         <h2>➕ Nuevo encargo</h2>
@@ -253,9 +277,22 @@ async function marcarProduccion(id, listo) {
     const { uid, ...resto } = p;
     await datos.guardarEn("produccion", {
         ...resto, estado: listo ? "listo" : "pendiente",
-        listoPor: listo ? c.estado.persona : "", listoEn: listo ? ahora().toISOString() : ""
+        listoPor: listo ? c.estado.persona : "", listoEn: listo ? ahora().toISOString() : "",
+        entregadoPor: "", entregadoEn: ""
     });
-    if (listo) c.aviso(`✅ ${p.producto}: listo`, "ok");
+    if (listo) c.aviso(`✅ ${p.producto}: listo para entregar`, "ok");
+}
+
+// La moza (o quien sea) marca que el cliente ya se lo llevó; "Deshacer" lo vuelve a "listo".
+async function marcarEntregado(id, entregado) {
+    const p = c.estado.produccion.find((x) => x.id === id);
+    if (!p) return;
+    const { uid, ...resto } = p;
+    await datos.guardarEn("produccion", {
+        ...resto, estado: entregado ? "entregado" : "listo",
+        entregadoPor: entregado ? c.estado.persona : "", entregadoEn: entregado ? ahora().toISOString() : ""
+    });
+    if (entregado) c.aviso(`📦 ${p.producto}: entregado`, "ok");
 }
 
 async function borrarProduccion(id) {
@@ -312,7 +349,7 @@ export function vistaCaja() {
     <section class="encabezado">
         <h1>💵 Cierre de caja</h1>
         <p>Al terminar el turno, anotá lo que dice la registradora y lo que contaste. La app calcula si sobra o falta,
-        y Carolina lo ve en Actividad.</p>
+        y los encargados lo ven en Actividad.</p>
     </section>
     <form class="formulario" id="form-caja">
         <h2>${f.existe ? "✏️ Corregir el cierre" : "🧮 Cierre de hoy"}</h2>
@@ -335,6 +372,16 @@ export function vistaCaja() {
         <label>${txt}
             <input data-caja-campo="${k}" data-foco="caja-${k}" inputmode="numeric" value="${esc(f[k])}" placeholder="$ 0">
         </label>`).join("")}
+        ${(() => {
+            const cobrado = cobradoEnTurno(f.local, f.fecha, f.turno);
+            if (!cobrado.mesas) return "";
+            return `
+        <div class="caja__mesas">
+            <p><strong>🍽️ Cobrado por mesas en este turno: ${pesos(cobrado.total)}</strong> (${cobrado.mesas} mesa${cobrado.mesas === 1 ? "" : "s"})</p>
+            <p class="caja__detalle">Efectivo ${pesos(cobrado.porMedio.efectivo)} · Transferencias y QR ${pesos(cobrado.porMedio.transferencias)} · Tarjetas ${pesos(cobrado.porMedio.tarjetas)}</p>
+            <button class="boton boton--suave" type="button" data-caja-usar-mesas="${cobrado.total}">Usar como "total vendido"</button>
+        </div>`;
+        })()}
         <p class="caja__diferencia caja__diferencia--${est.clase}" id="caja-diferencia">${est.texto}</p>
         <label>Nota (opcional)
             <input data-caja-campo="nota" data-foco="caja-nota" maxlength="200" value="${esc(f.nota)}" placeholder="Ej: pagué $3.000 de hielo al proveedor">
@@ -381,8 +428,15 @@ async function guardarCaja() {
 export function avisosExtrasHoy() {
     const local = localDeHoy();
     const bajos = faltantes(local);
-    const prod = c.estado.produccion.filter((p) => p.fecha === hoyIso() && p.local === local && p.estado !== "listo").sort(ordenPorHora);
+    const deHoy = c.estado.produccion.filter((p) => p.fecha === hoyIso() && p.local === local).sort(ordenPorHora);
+    const prod = puede("produccionHoy") ? deHoy.filter((p) => !terminado(p)) : [];
+    const paraEntregar = puede("produccionHoy") ? [] : deHoy.filter((p) => p.estado === "listo");
     return `
+    ${paraEntregar.length ? `
+    <section class="momento">
+        <h2 class="momento__titulo">🎂 Encargos listos para entregar · ${paraEntregar.length}</h2>
+        ${paraEntregar.map((p) => tarjetaProduccion(p, { entrega: true })).join("")}
+    </section>` : ""}
     ${prod.length ? `
     <section class="momento">
         <h2 class="momento__titulo">🍰 Producción de hoy · ${prod.length} por hacer</h2>
@@ -402,7 +456,7 @@ export function resumenExtrasDuena() {
     const desde = cal.iso(cal.sumarDias(ahora(), -3));
     const filas = Object.entries(LOCALES).map(([id, l]) => {
         const bajos = faltantes(id);
-        const prod = c.estado.produccion.filter((p) => p.fecha === hoy && p.local === id && p.estado !== "listo");
+        const prod = c.estado.produccion.filter((p) => p.fecha === hoy && p.local === id && !terminado(p));
         const urgentes = prod.filter((p) => nivel(p) === "rojo").length;
         const cierres = c.estado.cajas.filter((x) => x.local === id && x.fecha >= desde).sort((a, b) => (b.cuando || "").localeCompare(a.cuando || ""));
         return `
@@ -415,9 +469,12 @@ export function resumenExtrasDuena() {
     }).join("");
     return `
     <section class="momento">
-        <h2 class="momento__titulo">☕ Cocina, stock y caja</h2>
+        <h2 class="momento__titulo">☕ Salón, cocina, stock y caja</h2>
+        ${resumenSalonDuena()}
         <div class="resumen-extras">${filas}</div>
         <div class="resumen-extras__botones">
+            <button class="boton boton--suave" data-ir="salon">Salón</button>
+            <button class="boton boton--suave" data-ir="comandas">Comandas</button>
             <button class="boton boton--suave" data-ir="produccion">Producción</button>
             <button class="boton boton--suave" data-ir="stock">Stock</button>
             <button class="boton boton--suave" data-ir="caja">Cierres de caja</button>
@@ -446,6 +503,8 @@ export function conectarExtras(on) {
     on("#form-produccion", "submit", (el, ev) => { ev.preventDefault(); agregarProduccion(); });
     on("[data-prod-listo]", "click", (el) => { el.disabled = true; marcarProduccion(el.dataset.prodListo, true); });
     on("[data-prod-deshacer]", "click", (el) => marcarProduccion(el.dataset.prodDeshacer, false));
+    on("[data-prod-entregado]", "click", (el) => { el.disabled = true; marcarEntregado(el.dataset.prodEntregado, true); });
+    on("[data-prod-a-listo]", "click", (el) => marcarEntregado(el.dataset.prodAListo, false));
     on("[data-prod-borrar]", "click", (el) => borrarProduccion(el.dataset.prodBorrar));
     // Caja: la diferencia se recalcula al escribir, sin redibujar toda la pantalla.
     on("[data-caja-campo]", "input", (el) => {
@@ -460,6 +519,7 @@ export function conectarExtras(on) {
         c.render();
     });
     on("#form-caja", "submit", (el, ev) => { ev.preventDefault(); guardarCaja(); });
+    on("[data-caja-usar-mesas]", "click", (el) => { e.formCaja.vendido = el.dataset.cajaUsarMesas; c.render(); });
     on("[data-caja-borrar]", "click", async (el) => {
         if (confirm("¿Borrar este cierre de caja?")) await datos.borrarDe("cajas", el.dataset.cajaBorrar);
     });

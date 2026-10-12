@@ -8,6 +8,7 @@ import {
     USUARIO_EQUIPO,
     PERSONAS,
     CLAVE_EQUIPO_PRUEBA,
+    CLAVE_ADMIN_PRUEBA,
     INTENTOS_MAXIMOS,
     MINUTOS_BLOQUEO
 } from "./config.js";
@@ -43,7 +44,7 @@ const personaDeEmail = (email) => {
 const CLAVE_PERSONA = "cr-persona";
 const CLAVE_INTENTOS = "cr-intentos";
 const EMAIL_EQUIPO = `${USUARIO_EQUIPO}@${DOMINIO_LOGIN}`;
-export const necesitaClave = (personaId) => PERSONAS[personaId]?.rol === "duena";
+export const necesitaClave = (personaId) => ["admin_general", "encargado"].includes(PERSONAS[personaId]?.rol);
 
 // ¿Este celular ya tiene la sesión del equipo? (entonces las chicas entran solo tocando su nombre)
 let equipoLogueado = false;
@@ -81,7 +82,9 @@ const limpiarFallos = () => localStorage.removeItem(CLAVE_INTENTOS);
 async function iniciarSesion(email, clave) {
     if (minutosBloqueado()) throw new Error("bloqueado");
     if (modoPrueba) {
-        const correcta = email === EMAIL_EQUIPO ? clave === CLAVE_EQUIPO_PRUEBA : !!clave;
+        // En la demo: el admin general con su código; todos los demás, con el del equipo.
+        const esAdmin = PERSONAS[personaDeEmail(email)]?.rol === "admin_general";
+        const correcta = clave === (esAdmin ? CLAVE_ADMIN_PRUEBA : CLAVE_EQUIPO_PRUEBA);
         if (!correcta) {
             const quedan = registrarFallo();
             throw new Error(minutosBloqueado() ? "bloqueado" : `clave:${quedan}`);
@@ -254,10 +257,12 @@ export async function borrarTareaExtra(id) {
 // "notasEquipo" → notas compartidas (texto o lista con ítems): todas las escriben, editan y borran
 // "recordatorios" → recordatorios de cada una: todas los ven, solo la autora los edita o borra
 // "stock", "produccion", "cajas" → funciones traídas de Restix (ver js/extras.js)
+// "mesas", "comandas", "salonMapa" → salón, mapa de mesas y cocina, también de Restix (ver js/salon.js)
+// "usuarios", "permisos" → equipo, roles y permisos (ver js/equipo.js)
 // "checklists"  → lo tildado de cada checklist por día (id = <checklist>_<fecha>); los ítems están en config.js
 // Mismo manejo en los dos modos: en prueba se guardan en localStorage (cr-demo-<coleccion>).
 
-export const COLECCIONES = ["notasTurno", "agenda", "notasDuena", "pedidosClientes", "pedidosDia", "notasEquipo", "recordatorios", "checklists", "stock", "produccion", "cajas"];
+export const COLECCIONES = ["notasTurno", "agenda", "notasDuena", "pedidosClientes", "pedidosDia", "notasEquipo", "recordatorios", "checklists", "stock", "produccion", "cajas", "mesas", "comandas", "salonMapa", "usuarios", "permisos"];
 const claveDemo = (col) => `cr-demo-${col}`;
 const leerColDemo = (col) => {
     try { return JSON.parse(localStorage.getItem(claveDemo(col))) || {}; } catch { return {}; }

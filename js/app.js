@@ -7,6 +7,8 @@ import * as cal from "./calendario.js";
 import * as datos from "./datos.js";
 import { sembrarDemo } from "./demo.js";
 import * as extras from "./extras.js";
+import * as salon from "./salon.js";
+import * as equipo from "./equipo.js";
 
 const $app = document.getElementById("app");
 const estado = {
@@ -29,7 +31,7 @@ const estado = {
     buscarGlosario: "",
     modoGlosario: "local",
     filtroCal: { local: "todos", estado: "todas" }, // calendario: local y estado    // glosario: local | persona | semana
-    filtroMuro: "todos",      // muro de actividad de Carolina: todos | centro | plaza
+    filtroMuro: "todos",      // muro de actividad: todos | id de local
     animar: true,             // animación de entrada: solo al cambiar de pantalla
     recien: null,             // tarea recién marcada (animación del tilde)
     pedidosClientes: [],      // pedidos que hacen los clientes en el local
@@ -57,12 +59,13 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const nombre = (id) => PERSONAS[id]?.nombre || id;
 const hora = (isoStr) => new Date(isoStr).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
 const diaCorto = (isoStr) => cal.fechaLarga(new Date(isoStr));
-const esDuena = () => PERSONAS[estado.persona]?.rol === "duena";
+// "Gestión" (antes "dueña"): admin general y encargados ven Actividad, Tareas, etc. (roles en js/equipo.js)
+const esDuena = () => equipo.esGestion(estado.persona);
 const personasDe = (localId) => [...new Set(Object.values(LOCALES[localId].turnos))];
 const nombreTurno = (t) => (t === "manana" ? "mañana" : "tarde");
 const nuevoId = (prefijo) => `${prefijo}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 const masNuevoPrimero = (a, b) => b.cuando.localeCompare(a.cuando);
-const empleadas = () => Object.keys(PERSONAS).filter((id) => PERSONAS[id].rol === "empleada");
+const empleadas = () => Object.keys(PERSONAS).filter((id) => equipo.esEquipo(id) && equipo.activa(id));
 const paraQuien = (para) => (para === "todas" ? "todo el equipo" : nombre(para));
 // Tareas puntuales de Carolina ("agenda"). "todas" = todas las del local (o todas si no tiene local).
 const agendaPara = (a, persona) => a.para === persona || (a.para === "todas" && (!a.local || personasDe(a.local).includes(persona)));
@@ -75,6 +78,7 @@ const nombreDeTarea = (id) => cal.todasLasTareas().find((t) => t.id === id)?.nom
 // ---------- Arranque (se llama al final del archivo) ----------
 
 const iniciar = () => datos.escucharSesion((persona) => {
+    if (persona && !equipo.activa(persona)) { datos.salir(); persona = null; }
     estado.persona = persona;
     if (!persona) return pantallaLogin();
     if (!estado.escuchando) {
@@ -96,9 +100,12 @@ const iniciar = () => datos.escucharSesion((persona) => {
         datos.escucharColeccion("recordatorios", (lista) => { estado.recordatorios = lista; render(); });
         datos.escucharColeccion("checklists", (lista) => { estado.checklists = lista; render(); });
         extras.escucharExtras();
+        salon.escucharSalon();
+        equipo.escucharEquipo();
         // El bloc de notas es privado: solo Carolina lo lee.
-        if (PERSONAS[persona]?.rol === "duena") {
-            datos.escucharColeccion("notasDuena", (lista) => { estado.notasDuena = lista; render(); });
+        if (equipo.esGestion(persona)) {
+            // Cada uno ve solo sus notas (hay más de una persona de gestión: admin general y encargados).
+            datos.escucharColeccion("notasDuena", (lista) => { estado.notasDuena = lista.filter((n) => !n.uid || n.uid === datos.uidActual()); render(); });
         }
     }
     if (!localStorage.getItem(`cr-bienvenida-${persona}`)) return pantallaBienvenida();
@@ -146,24 +153,26 @@ function pantallaLogin() {
         cuerpo = `
         <div class="login__personas">
             <p class="login__pregunta">¿Quién sos?</p>
-            ${Object.entries(PERSONAS).filter(([id]) => !datos.necesitaClave(id)).map(([id, p]) =>
+            ${Object.entries(PERSONAS).filter(([id]) => !datos.necesitaClave(id) && equipo.activa(id)).map(([id, p]) =>
                 `<button class="boton boton--grande" data-elegir="${id}">${esc(p.nombre)}${p.puesto ? ` <small class="login__puesto">· ${esc(p.puesto)}</small>` : ""}</button>`).join("")}
         </div>
-        ${Object.entries(PERSONAS).filter(([id]) => datos.necesitaClave(id)).map(([id, p]) =>
-            `<button class="login__duena" data-elegir="${id}">Soy ${esc(p.nombre)}${p.puesto ? ` (${esc(p.puesto)})` : ""}</button>`).join("")}`;
+        ${Object.entries(PERSONAS).filter(([id]) => datos.necesitaClave(id) && equipo.activa(id)).map(([id, p]) =>
+            `<button class="login__duena" data-elegir="${id}">Soy ${esc(p.nombre)} (${esc(p.puesto || "")}${p.rol === "admin_general" ? " · admin general" : ""})</button>`).join("")}`;
     }
 
     $app.innerHTML = `
     <main class="login">
-        <div class="login__marca">
-            <img class="login__logo" src="assets/img/logo.svg" alt="Cremona" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className: 'login__logo login__logo--emoji', textContent: '🧁' }))">
-            <h1>Cremona</h1>
-            <p>Tareas de los locales Centro y Plaza</p>
+        <div class="login__tapa">
+            <p class="login__bajada">Coffee & Brunch</p>
+            <h1 class="login__marca"><img src="assets/img/marca-cremona.png" alt="Cremona" width="640" height="123"></h1>
+            <p class="login__titulo">Equipo</p>
+            <img class="login__foto" src="assets/img/fotos/portada.jpg" alt="" width="800" height="449">
+            <p class="login__direccion">${esc(Object.values(LOCALES)[0].direccion || "")} · Café, pastelería y bollería artesanal</p>
         </div>
         ${datos.modoPrueba ? `
         <div class="aviso aviso--prueba">
             <strong>Demo · datos de prueba.</strong> Lo que cargues queda solo en este navegador.
-            Clave del equipo: <strong>${esc(CLAVE_EQUIPO_PRUEBA)}</strong> · la de Carolina puede ser cualquiera.
+            Código del equipo: <strong>${esc(CLAVE_EQUIPO_PRUEBA)}</strong> (el admin general tiene el suyo).
         </div>` : ""}
         ${cuerpo}
     </main>`;
@@ -213,13 +222,13 @@ const TEXTO_BIENVENIDA = `
     <h2>¿Para qué es esta app? 🧁</h2>
     <p>Esta app es para <strong>organizar el trabajo entre turnos</strong> de forma simple y efectiva. 🍓</p>${datos.modoPrueba ? `
     <p><strong>Es una demo:</strong> probá marcar tareas, dejar una nota de turno o un recordatorio para otra persona.
-    Para ver lo que ve la dueña, tocá Salir y entrá como <strong>Carolina</strong>. Todo es inventado y queda solo en este celular.</p>` : ""}`;
+    Para ver lo que ve cada rol, tocá Salir y entrá con otro nombre. <strong>Valentín</strong> es el admin general: en Más → Equipo y permisos agrega y saca personas y elige qué puede hacer cada rol. Todo es inventado y queda solo en este celular.</p>` : ""}`;
 
 function pantallaBienvenida() {
     $app.innerHTML = `
     <main class="bienvenida">
         <div class="bienvenida__tarjeta">
-            <img class="bienvenida__logo" src="assets/img/logo.svg" alt="Cremona" onerror="this.remove()">
+            <img class="bienvenida__logo" src="assets/img/logo-cremona.png" alt="Cremona Coffee & Brunch" width="160" height="169">
             <p class="bienvenida__hola">Hola, ${esc(nombre(estado.persona))} 👋</p>
             ${TEXTO_BIENVENIDA}
             <button class="boton boton--grande" id="entendido">Entendido</button>
@@ -273,8 +282,11 @@ const MAS_DUENA = [["informes", "chart-bar", "Informes"], ["turno", "arrows-exch
 const MAS_EMPLEADA = [["glosario", "book", "Glosario"], ["locales", "building-store", "Locales"]];
 // "Checklist" aparece solo a quien tiene alguno (por ahora, Mica).
 // Producción, Stock y Cierre de caja (traídas de Restix) están en js/extras.js.
-const menuMas = () => (esDuena() ? [...extras.menuExtras(), ...MAS_DUENA]
-    : [...extras.menuExtras(), ...MAS_EMPLEADA, ...(CHECKLISTS.some((c) => c.persona === estado.persona) ? [["checklist", "list-check", "Checklist"]] : [])]);
+// Pantallas que dependen de un permiso (la tabla de Equipo y permisos).
+const VISTA_PERMISO = { salon: "salon", comandas: "comandas", cobros: "cobrar", produccion: "produccion", stock: "stock", caja: "caja", informes: "informes", tareas: "tareas", equipo: "usuarios" };
+const vistaPermitida = (vista) => !VISTA_PERMISO[vista] || equipo.puede(VISTA_PERMISO[vista], estado.persona);
+const menuMas = () => (esDuena() ? [...salon.menuSalon(), ...extras.menuExtras(), ["equipo", "users", "Equipo y permisos"], ...MAS_DUENA].filter(([id]) => vistaPermitida(id))
+    : [...salon.menuSalon(), ...extras.menuExtras(), ...MAS_EMPLEADA, ...(CHECKLISTS.some((c) => c.persona === estado.persona) ? [["checklist", "list-check", "Checklist"]] : [])]);
 
 function irA(vista) {
     estado.vista = vista;
@@ -287,7 +299,8 @@ function irA(vista) {
 
 function render() {
     if (!estado.persona || !localStorage.getItem(`cr-bienvenida-${estado.persona}`)) return;
-    const nav = esDuena() ? NAV_DUENA : NAV_EMPLEADA;
+    const nav = (esDuena() ? NAV_DUENA : NAV_EMPLEADA).filter(([id]) => vistaPermitida(id));
+    if (!vistaPermitida(estado.vista)) estado.vista = esDuena() ? "actividad" : "hoy";
     // Las pantallas del menú "Más" marcan el botón "Más" como activo.
     const activa = menuMas().some(([id]) => id === estado.vista) ? "mas" : estado.vista;
 
@@ -296,7 +309,8 @@ function render() {
         informes: vistaInformes, tareas: vistaTareas, notas: vistaNotasEquipo, bloc: vistaNotas, glosario: vistaGlosario,
         actividad: vistaActividad, mas: vistaMas, pedidos: vistaPedidos, historialPedidos: vistaHistorialPedidos,
         recordatorios: vistaRecordatorios, checklist: vistaChecklist,
-        stock: extras.vistaStock, produccion: extras.vistaProduccion, caja: extras.vistaCaja
+        stock: extras.vistaStock, produccion: extras.vistaProduccion, caja: extras.vistaCaja,
+        salon: salon.vistaSalon, comandas: salon.vistaComandas, cobros: salon.vistaCobros, equipo: equipo.vistaEquipo
     };
     const contenido = (vistas[estado.vista] || vistaHoy)();
 
@@ -308,8 +322,7 @@ function render() {
     $app.innerHTML = `
     <header class="cabecera">
         <button class="cabecera__marca" data-vista="${esDuena() ? "actividad" : "hoy"}" aria-label="Ir al inicio">
-            <img class="cabecera__logo" src="assets/img/logo.svg" alt="Cremona" onerror="this.remove()">
-            <span>Cremona</span>
+            <span class="cabecera__marca-img" role="img" aria-label="Cremona"></span>
         </button>
         <div class="cabecera__acciones">
             <button class="tema" id="btn-tema" aria-label="Cambiar a modo ${temaActual() === "oscuro" ? "claro" : "oscuro"}">
@@ -471,6 +484,10 @@ function conectarEventos() {
 
     // Producción, Stock y Cierre de caja (js/extras.js)
     extras.conectarExtras(on);
+    // Salón y comandas (js/salon.js)
+    salon.conectarSalon(on);
+    // Equipo y permisos (js/equipo.js)
+    equipo.conectarEquipo(on);
 }
 
 // ---------- Acciones sobre tareas ----------
@@ -651,10 +668,10 @@ function heroHoy({ hechas = 0, total = 0, extra = "" } = {}) {
             </div>
         </div>
         <div class="hoy__chips">
-            <span class="hoy__chip">📅 Semana ${b.semana} del mes</span>
+            <span class="hoy__chip">📅 Semana ${b.semana} de 4 del mes</span>
             ${domingo ? `<span class="hoy__chip">😴 Hoy los locales están cerrados</span>` : ""}
             ${donde ? `<span class="hoy__chip">🏪 ${LOCALES[donde.local].nombre} · turno ${nombreTurno(donde.turno)}</span>` : ""}
-            ${lunes ? `<span class="hoy__chip">☕ Hoy es día de cafetera</span>` : ""}
+            ${lunes ? `<span class="hoy__chip">☕ Hoy se limpia a fondo la cafetera</span>` : ""}
             ${extra}
         </div>
         ${total ? `
@@ -668,6 +685,13 @@ function heroHoy({ hechas = 0, total = 0, extra = "" } = {}) {
 // ---------- Vista: Mis tareas ----------
 
 // Encabezado compacto de "Hoy": dónde está, saludo y anillo de progreso.
+// Los lunes, la limpieza a fondo de la cafetera (tarea "lunes" de config.js): ¿le toca hoy a esta persona?
+// "Semana 2 de 4" en vez de "S2" en toda la app (pedido de Esteban, 12/10/2026).
+const nombreSemana = (n) => `Semana ${n} de 4`;
+
+const meTocaCafetera = (hoy) => hoy.getDay() === 1 &&
+    cal.asignacionesActuales(hoy).some((a) => a.lunes && cal.iso(a.lunes) === cal.iso(hoy) && a.persona === estado.persona);
+
 function cabeceraHoy(hechas, total) {
     const hoy = cal.ahora();
     const b = cal.bloqueDe(hoy);
@@ -681,8 +705,9 @@ function cabeceraHoy(hechas, total) {
         <div class="saludo__fecha saludo__fecha--s${b.semana}">
             <span class="saludo__dia">${cal.nombreDia(hoy)} ${hoy.getDate()}</span>
             <span class="saludo__mes">
-                de ${cal.nombreMes(hoy.getMonth())} · <span class="sigla-semana sigla-semana--s${b.semana}">S${b.semana}</span>${hoy.getDay() === 1 ? " · ☕ día de cafetera" : ""}
+                de ${cal.nombreMes(hoy.getMonth())} · <span class="sigla-semana sigla-semana--s${b.semana}">${nombreSemana(b.semana)}</span>
             </span>
+            ${meTocaCafetera(hoy) ? `<span class="saludo__cafetera">☕ Hoy te toca limpiar a fondo la cafetera</span>` : ""}
         </div>
         ${total ? anillo(hechas, total) : ""}
     </section>`;
@@ -730,7 +755,7 @@ function vistaHoy() {
     ${cabeceraHoy(hechas.length, mias.length)}
     ${agendaHoy.length ? `
     <section class="momento">
-        <h2 class="momento__titulo">📌 Tareas de Carolina</h2>
+        <h2 class="momento__titulo">📌 Tareas que te dejaron</h2>
         ${agendaHoy.map((a) => tarjetaAgenda(a, { marcable: true, mostrarFecha: false })).join("")}
     </section>` : ""}
     ${notasTurno.length ? `
@@ -739,6 +764,7 @@ function vistaHoy() {
         ${notasTurno.map((n) => tarjetaNotaTurno(n)).join("")}
     </section>` : ""}
     ${checklistsHoy()}
+    ${salon.avisosSalonHoy()}
     ${extras.avisosExtrasHoy()}
     <section class="momento">
         <h2 class="momento__titulo">Tareas de hoy${porHacer ? ` · ${porHacer} por hacer` : ""}</h2>
@@ -757,7 +783,7 @@ function vistaHoy() {
 // ---------- Vista: Calendario ----------
 
 // ---------- Filtros del calendario ----------
-// Local: todos | centro | plaza.  Estado: todas | hechas | por-hacer | no-hechas.
+// Local: todos | id de local.  Estado: todas | hechas | por-hacer | no-hechas.
 // "No hechas" = de semanas que ya terminaron sin tildar, o pasadas a otro día.
 
 const FILTRO_ESTADOS = [["todas", "Todas"], ["hechas", "✅ Hechas"], ["por-hacer", "⏳ Por hacer"], ["no-hechas", "❌ No hechas"]];
@@ -821,7 +847,7 @@ function listaFiltradaMes(anio, mes, soloMio) {
         <h2 class="bloque__titulo">${soloMio ? "Tus tareas" : "Tareas"} de ${cal.nombreMes(mes)}<span class="bloque__meta">${total} con este filtro</span></h2>
         ${grupos.map(({ s, b, items }) => items.length ? `
         <div class="lista-cal__semana">
-            <h3><span class="sigla-semana sigla-semana--s${s}">S${s}</span> del ${b.inicio.getDate()} al ${b.fin.getDate()}</h3>
+            <h3><span class="sigla-semana sigla-semana--s${s}">${nombreSemana(s)}</span> del ${b.inicio.getDate()} al ${b.fin.getDate()}</h3>
             <ul>
                 ${items.map((x) => `
                 <li class="lista-cal__item lista-cal__item--${x.estado}">
@@ -885,7 +911,7 @@ function vistaCalendario() {
         const hechasSemana = asigs.filter((a) => estadoDe(a).tipo === "hecha").length;
         return `
         <span class="calendario__semana ${b.clave === claveHoy ? "is-actual" : ""}" title="${soloMio ? "Tus tareas de esa semana" : "Tareas de esa semana"}">
-            <span class="sigla-semana sigla-semana--s${s}">S${s}</span>${b.inicio.getDate()}–${b.fin.getDate()}${asigs.length ? ` · ${hechasSemana}/${asigs.length} ✓` : ""}
+            <span class="sigla-semana sigla-semana--s${s}">${nombreSemana(s)}</span>${b.inicio.getDate()}–${b.fin.getDate()}${asigs.length ? ` · ${hechasSemana}/${asigs.length} ✓` : ""}
         </span>`;
     }).join("");
 
@@ -915,7 +941,7 @@ function vistaCalendario() {
         <div class="calendario__leyenda">
             <span><span class="punto punto--ok">n</span> ${soloMio ? "hiciste" : "hechas"}</span>
             <span><span class="punto punto--pos">n</span> pasadas a otro día</span>
-            <span>☕ ${soloMio ? "te toca la cafetera" : "Limpieza de cafetera"}</span>
+            <span>☕ ${soloMio ? "te toca limpiar la cafetera" : "limpieza a fondo de la cafetera"}</span>
             <span>📌 ${soloMio ? "algo agendado para vos" : "agenda"}</span>
         </div>
     </section>
@@ -949,7 +975,7 @@ function detalleDia(fecha) {
             ${agendaDia.length ? agendaDia.map((a) => tarjetaAgenda(a, { borrable: esDuena(), mostrarFecha: false })).join("") : `<p class="vacio">Nada agendado.</p>`}
             ${esDuena() ? formTareaPuntual({ conFecha: false, compacto: true }) : ""}
         </div>` : ""}
-        ${cafeteraDelDia.length ? `<div class="detalle-dia__grupo"><h3>☕ Limpieza de cafetera</h3><ul>${cafeteraDelDia.map((a) =>
+        ${cafeteraDelDia.length ? `<div class="detalle-dia__grupo"><h3>☕ Limpieza a fondo de la cafetera</h3><ul>${cafeteraDelDia.map((a) =>
             `<li>${icono(a)} ${LOCALES[a.tarea.local].nombre} · ${esc(nombre(a.persona))}</li>`).join("")}</ul></div>` : ""}
         <div class="detalle-dia__grupo">
             <h3>Ese día se registró</h3>
@@ -1073,7 +1099,7 @@ function vistaInformes() {
                 <div class="barra"><span class="barra__relleno" style="width:${pct}%"></span></div>
                 <div class="tabla-scroll">
                     <table class="informe">
-                        <thead><tr><th>Tarea</th>${bloques.map((b) => `<th class="col-s${b.semana}">S${b.semana}<small>${b.inicio.getDate()}–${b.fin.getDate()}</small></th>`).join("")}</tr></thead>
+                        <thead><tr><th>Tarea</th>${bloques.map((b) => `<th class="col-s${b.semana}">${nombreSemana(b.semana)}<small>${b.inicio.getDate()}–${b.fin.getDate()}</small></th>`).join("")}</tr></thead>
                         <tbody>${filas}</tbody>
                     </table>
                 </div>
@@ -1121,6 +1147,9 @@ function vistaInformes() {
 // Cada una tiene nombre, local, para quién (una chica o todas las del local) y fecha.
 // Ese día le aparece en "Hoy" para tildarla; si no se hace, le sigue apareciendo.
 
+// Quién dejó la tarea puntual (las viejas no lo guardaban: se saca del uid "demo-<persona>").
+const autorAgenda = (a) => a.autor || (a.uid || "").replace(/^demo-/, "") || "carolina";
+
 function tarjetaAgenda(a, { borrable = false, mostrarFecha = true, marcable = false } = {}) {
     const r = registroAgenda(a);
     const atrasada = !r && a.fecha < cal.iso(cal.ahora());
@@ -1142,7 +1171,8 @@ function tarjetaAgenda(a, { borrable = false, mostrarFecha = true, marcable = fa
         <div class="tarea__fila">
             ${check}
             <div class="tarea__info">
-                <p class="nota__meta">📌 ${a.fecha === cal.iso(cal.ahora()) ? "Para hoy · " : mostrarFecha ? `${cal.fechaLarga(cal.desdeIso(a.fecha))} · ` : `Para el ${cal.fechaLarga(cal.desdeIso(a.fecha))} · `}${a.local ? `${LOCALES[a.local]?.nombre} · ` : ""}${esc(paraQuien(a.para))} · de Carolina</p>
+                <p class="nota__meta">📌 ${a.fecha === cal.iso(cal.ahora()) ? "Hoy · " : mostrarFecha ? `${cal.fechaLarga(cal.desdeIso(a.fecha))} · ` : `El ${cal.fechaLarga(cal.desdeIso(a.fecha))} · `}${a.local ? `${LOCALES[a.local]?.nombre}` : ""}</p>
+                <p class="rec-de"><strong>De:</strong> ${esc(nombre(autorAgenda(a)))} · <strong>Para:</strong> ${esc(paraQuien(a.para))}${a.para === estado.persona ? " (vos)" : ""}</p>
                 <p class="nota__texto">${esc(a.texto)}</p>
                 ${estadoTexto ? `<p class="nota__meta">${estadoTexto}</p>` : ""}
             </div>
@@ -1174,7 +1204,7 @@ function formTareaPuntual({ conFecha = true, compacto = false } = {}) {
     if (!f.fecha) f.fecha = cal.iso(cal.proximoDiaHabil(cal.ahora()));
     // Primero las que trabajan en ese local y después las demás (Carolina puede asignarle algo a cualquiera).
     const delLocal = personasDe(f.local);
-    const personas = [...delLocal, ...Object.keys(PERSONAS).filter((id) => PERSONAS[id].rol === "empleada" && !delLocal.includes(id))];
+    const personas = [...delLocal, ...Object.keys(PERSONAS).filter((id) => equipo.esEquipo(id) && equipo.activa(id) && !delLocal.includes(id))];
     return `
     <form class="formulario ${compacto ? "formulario--compacto" : ""}" id="form-agenda">
         ${compacto ? "" : "<h2>➕ Nueva tarea</h2>"}
@@ -1210,7 +1240,7 @@ async function guardarAgenda(fechaFija = null) {
     if (!texto) return aviso("Escribí la tarea");
     if (!fecha) return aviso("Elegí el día");
     await datos.guardarEn("agenda", {
-        id: nuevoId("agenda"), fecha, local: f.local, para: f.para, texto, cuando: cal.ahora().toISOString()
+        id: nuevoId("agenda"), fecha, local: f.local, para: f.para, texto, cuando: cal.ahora().toISOString(), autor: estado.persona
     });
     f.texto = "";
     aviso(`Tarea agregada para ${paraQuien(f.para)} el ${cal.fechaLarga(cal.desdeIso(fecha))} ✓`);
@@ -1423,7 +1453,7 @@ function vistaGlosario() {
                     <div class="tabla-scroll">
                         <table class="informe glosario">
                             <thead><tr><th>Tarea</th>${[1, 2, 3, 4].map((s) =>
-                                `<th class="${s === semanaActual ? "is-actual" : ""}"><span class="sigla-semana sigla-semana--s${s}">S${s}</span><small>${rango(s)}${s === semanaActual ? " · ahora" : ""}</small></th>`).join("")}</tr></thead>
+                                `<th class="${s === semanaActual ? "is-actual" : ""}"><span class="sigla-semana sigla-semana--s${s}">${nombreSemana(s)}</span><small>${rango(s)}${s === semanaActual ? " · ahora" : ""}</small></th>`).join("")}</tr></thead>
                             <tbody>${filas}</tbody>
                         </table>
                     </div>` : `<p class="vacio">No hay tareas con esa búsqueda.</p>`}
@@ -1448,7 +1478,7 @@ function vistaGlosario() {
                 ${lunes.length ? `<p class="ficha__lunes">☕ ${lunes.map((t) => `${esc(t.nombre)} (${LOCALES[t.local].nombre}${t.persona ? ", todos los lunes" : ", lunes alternados"})`).join(" · ")}</p>` : ""}
                 ${porSemana.map((lista, i) => `
                 <div class="ficha__semana ${i + 1 === semanaActual ? "is-actual" : ""}">
-                    <span class="sigla-semana sigla-semana--s${i + 1}">S${i + 1}</span>
+                    <span class="sigla-semana sigla-semana--s${i + 1}">${nombreSemana(i + 1)}</span>
                     ${lista.length ? `<ul>${lista.map((t) => `<li><span class="punto-local punto-local--${t.local}"></span>${esc(t.nombre)}</li>`).join("")}</ul>` : `<p class="glosario__nada">Sin tareas fijas</p>`}
                 </div>`).join("")}
             </section>`;
@@ -1459,7 +1489,7 @@ function vistaGlosario() {
         cuerpo = [1, 2, 3, 4].map((s) => `
         <section class="semana-glosario semana-glosario--s${s} ${s === semanaActual ? "is-actual" : ""}">
             <header class="semana-glosario__cabecera">
-                <span class="sigla-semana sigla-semana--s${s}">S${s}</span>
+                <span class="sigla-semana sigla-semana--s${s}">${nombreSemana(s)}</span>
                 <strong>Semana ${s}</strong><small>del ${bloquesMes[s - 1].inicio.getDate()} al ${bloquesMes[s - 1].fin.getDate()} de ${mesNombre}${s === semanaActual ? " · esta semana" : ""}</small>
             </header>
             <div class="semana-glosario__locales">
@@ -1472,7 +1502,7 @@ function vistaGlosario() {
                 </div>`;
             }).join("")}
             </div>
-        </section>`).join("") + `<p class="vacio">☕ La limpieza de la cafetera va todos los lunes: Plaza, ${visibles.filter((t) => t.tipo === "lunes" && t.local === "plaza").map(quienLunes).join("") || "—"}${visibles.some((t) => t.tipo === "lunes" && t.local === "centro") ? ` · Centro, se turnan ${visibles.filter((t) => t.tipo === "lunes" && t.local === "centro").map(quienLunes).join("")}` : ""}.</p>`;
+        </section>`).join("") + `<p class="vacio">☕ La limpieza a fondo de la cafetera va todos los lunes: ${visibles.filter((t) => t.tipo === "lunes").map(quienLunes).join("") || "—"}.</p>`;
     }
 
     return `
@@ -1480,7 +1510,7 @@ function vistaGlosario() {
         <h1>📖 Glosario de tareas</h1>
         <p class="glosario__mes">${mesNombre} ${hoy.getFullYear()}</p>
         <p>Todas las tareas fijas de los dos locales y quién hace cada una. La semana del mes va por días:
-        ${[1, 2, 3, 4].map((s) => `<span class="sigla-semana sigla-semana--s${s}">S${s}</span> ${RANGOS_SEMANA[s - 1]}`).join(" · ")}.</p>
+        ${[1, 2, 3, 4].map((s) => `<span class="sigla-semana sigla-semana--s${s}">${nombreSemana(s)}</span> ${RANGOS_SEMANA[s - 1]}`).join(" · ")}.</p>
         <div class="glosario__totales">
             <span class="hoy__chip hoy__chip--fuerte">📋 ${todas.length} tareas fijas</span>
             ${Object.entries(LOCALES).map(([id, l]) => `<span class="hoy__chip">🏪 ${l.nombre}: ${todas.filter((t) => t.local === id).length}</span>`).join("")}
@@ -1574,7 +1604,7 @@ function vistaActividad() {
     return `
     ${heroHoy()}
     <section class="encabezado">
-        <h1>Actividad de los locales</h1>
+        <h1>${Object.keys(LOCALES).length > 1 ? "Actividad de los locales" : "Actividad del local"}</h1>
         <p>Lo que pasó en los últimos 7 días. Se actualiza solo.</p>
     </section>
     <div class="progreso-locales">${progreso}</div>
@@ -2345,7 +2375,7 @@ function vistaRecordatorios() {
     return `
     <section class="encabezado">
         <h1>🔔 Recordatorios</h1>
-        <p>Elegí para quién es: le aparece en su "Hoy" (a Carolina, en Actividad). Todo el equipo los ve, y los pueden editar o borrar quien lo anotó y a quien va dirigido.</p>
+        <p>Elegí para quién es: le aparece en su "Hoy" (a los encargados, en Actividad). Todo el equipo los ve, y los pueden editar o borrar quien lo anotó y a quien va dirigido.</p>
     </section>
     <form class="formulario" id="form-recordatorio" data-rec-form="nuevo">
         <h2>➕ Nuevo recordatorio</h2>
@@ -2375,7 +2405,7 @@ async function agregarRecordatorio() {
         id: nuevoId("rec"), ...nuevo, autora: estado.persona, creado: cal.ahora().toISOString(), editado: ""
     });
     estado.formRecordatorio = formRecordatorioVacio();
-    const donde = (id) => (PERSONAS[id]?.rol === "duena" ? "Actividad" : "Hoy");
+    const donde = (id) => (equipo.esGestion(id) ? "Actividad" : "Hoy");
     aviso(nuevo.persona === estado.persona ? `Recordatorio guardado ✓ Te aparece en ${donde(nuevo.persona)}` : `Recordatorio guardado ✓ Le aparece a ${nombre(nuevo.persona)} en ${donde(nuevo.persona)}`, "ok");
     render();
 }
@@ -2563,6 +2593,8 @@ window.addEventListener("unhandledrejection", (e) => {
 window.addEventListener("cr-error-lectura", (e) => avisoError(e.detail.codigo, `cargar ${e.detail.coleccion}`));
 
 extras.iniciarExtras({ estado, render, aviso, esc, nombre, esDuena, nuevoId, hora });
+salon.iniciarSalon({ estado, render, aviso, esc, nombre, esDuena, nuevoId, hora });
+equipo.iniciarEquipo({ estado, render, aviso, esc, nombre, nuevoId, hora });
 
 // Demo: la primera vez carga datos de ejemplo para que la app no arranque vacía.
 if (datos.modoPrueba) sembrarDemo();

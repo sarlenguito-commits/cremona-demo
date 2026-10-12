@@ -1,7 +1,7 @@
 // ============================================
 // Lógica de fechas: semana del mes, lunes, turnos y qué le toca a quién.
 // ============================================
-import { TAREAS, LOCALES, FECHA_INICIO } from "./config.js";
+import { TAREAS, LOCALES, FECHA_INICIO, PERSONAS } from "./config.js";
 
 // Tareas agregadas por Carolina desde la app (se suman a las de config.js).
 let tareasExtra = [];
@@ -153,7 +153,11 @@ export const tareasLibres = () => todasLasTareas().filter((t) => t.tipo === "lib
 // En qué local está (o estará) hoy una persona según la hora. null si no trabaja en ningún local.
 export function dondeEsta(persona, d) {
     const locales = Object.entries(LOCALES).filter(([, l]) => Object.values(l.turnos).includes(persona));
-    if (!locales.length) return null;
+    // Personas agregadas desde Equipo y permisos: sin turno fijo, pero con su local (y el turno según la hora).
+    if (!locales.length) {
+        const local = PERSONAS[persona]?.local;
+        return local && LOCALES[local] ? { local, turno: turnoActual(local, d) } : null;
+    }
     const ahoraMismo = locales.find(([id, l]) => l.turnos[turnoActual(id, d)] === persona);
     const [id, l] = ahoraMismo || locales[0];
     const turno = Object.entries(l.turnos).find(([, p]) => p === persona)[0];
