@@ -37,7 +37,7 @@ export const MINUTOS_BLOQUEO = 15;
 // Nombres inventados para la demo. "puesto" es lo que se muestra al entrar y en su Hoy
 // (rol "duena" = ve todo: Actividad, Informes, Tareas, Agenda; sirve también para una encargada).
 export const PERSONAS = {
-    abril: { nombre: "Abril", rol: "empleada", puesto: "cocinera" },
+    valentin: { nombre: "Valentín", rol: "empleada", puesto: "cocinero" },
     mica: { nombre: "Mica", rol: "empleada", puesto: "moza" },
     juli: { nombre: "Juli", rol: "empleada", puesto: "cocinera" },
     carolina: { nombre: "Carolina", rol: "duena", puesto: "dueña" }
@@ -53,7 +53,7 @@ export const LOCALES = {
     plaza: {
         nombre: "Plaza",
         cambioTurno: "16:00",
-        turnos: { manana: "abril", tarde: "mica" }
+        turnos: { manana: "valentin", tarde: "mica" }
     }
 };
 
@@ -62,12 +62,12 @@ export const LOCALES = {
 //  - "lunes":   se hace cada lunes; "persona" fija o "rotacion" que alterna un lunes cada una
 //  - "libre":   sin asignar todavía; se muestra hace cuántos días se hizo por última vez
 export const TAREAS = [
-    // ---------- Plaza: Abril (cocinera, mañana) y Mica (moza, tarde) ----------
+    // ---------- Plaza: Valentín (cocinero, mañana) y Mica (moza, tarde) ----------
     { id: "pla-cafetera", local: "plaza", nombre: "Limpieza a fondo de la cafetera (descalcificar y lavar filtros)", tipo: "lunes", persona: "mica" },
-    { id: "pla-horno", local: "plaza", nombre: "Limpieza del horno y las placas", tipo: "semanal", semanas: { 1: "abril", 2: "abril", 3: "abril", 4: "abril" } },
-    { id: "pla-heladera", local: "plaza", nombre: "Ordenar la heladera de atrás y tirar lo vencido", tipo: "semanal", semanas: { 2: "abril", 4: "abril" } },
-    { id: "pla-cocina", local: "plaza", nombre: "Limpieza a fondo de la cocina: mesadas, bacha y campana", tipo: "semanal", semanas: { 1: "abril", 3: "abril" } },
-    { id: "pla-deposito", local: "plaza", nombre: "Limpiar y acomodar el depósito (harinas, azúcar, descartables)", tipo: "semanal", semanas: { 2: "abril", 4: "abril" } },
+    { id: "pla-horno", local: "plaza", nombre: "Limpieza del horno y las placas", tipo: "semanal", semanas: { 1: "valentin", 2: "valentin", 3: "valentin", 4: "valentin" } },
+    { id: "pla-heladera", local: "plaza", nombre: "Ordenar la heladera de atrás y tirar lo vencido", tipo: "semanal", semanas: { 2: "valentin", 4: "valentin" } },
+    { id: "pla-cocina", local: "plaza", nombre: "Limpieza a fondo de la cocina: mesadas, bacha y campana", tipo: "semanal", semanas: { 1: "valentin", 3: "valentin" } },
+    { id: "pla-deposito", local: "plaza", nombre: "Limpiar y acomodar el depósito (harinas, azúcar, descartables)", tipo: "semanal", semanas: { 2: "valentin", 4: "valentin" } },
     { id: "pla-vitrina", local: "plaza", nombre: "Limpieza a fondo de la vitrina refrigerada (vidrios, bandejas y burletes)", tipo: "semanal", semanas: { 1: "mica", 3: "mica" } },
     { id: "pla-mesas", local: "plaza", nombre: "Repasar patas de mesas y sillas, y despegar chicles", tipo: "semanal", semanas: { 2: "mica", 4: "mica" } },
     { id: "pla-bano", local: "plaza", nombre: "Limpieza del baño de clientes", tipo: "semanal", semanas: { 1: "mica", 3: "mica" } },

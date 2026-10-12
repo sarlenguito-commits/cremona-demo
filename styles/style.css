@@ -355,165 +355,165 @@ p {
   animation: flotar 10s ease-in-out infinite;
 }
 .decoracion span:nth-child(1) {
-  --giro: 167deg;
-  top: 78%;
-  left: 27%;
-  width: 11px;
+  --giro: 103deg;
+  top: 72%;
+  left: 88%;
+  width: 20px;
   background-color: #F2C14E;
   animation-duration: 18s;
-  animation-delay: -6s;
+  animation-delay: -7s;
 }
 .decoracion span:nth-child(2) {
-  --giro: 58deg;
-  top: 28%;
-  left: 52%;
-  width: 18px;
+  --giro: 5deg;
+  top: 6%;
+  left: 81%;
+  width: 20px;
   background-color: #8CB866;
-  animation-duration: 17s;
-  animation-delay: -8s;
+  animation-duration: 10s;
+  animation-delay: -4s;
 }
 .decoracion span:nth-child(3) {
-  --giro: 10deg;
-  top: 35%;
-  left: 43%;
-  width: 20px;
-  background-color: #7FB3D5;
-  animation-duration: 12s;
-  animation-delay: -2s;
-}
-.decoracion span:nth-child(4) {
-  --giro: 86deg;
-  top: 24%;
-  left: 28%;
-  width: 18px;
-  background-color: #FFFFFF;
-  animation-duration: 17s;
-  animation-delay: -3s;
-}
-.decoracion span:nth-child(5) {
-  --giro: 165deg;
-  top: 61%;
-  left: 55%;
-  width: 11px;
-  background-color: #B26B26;
-  animation-duration: 14s;
-  animation-delay: -5s;
-}
-.decoracion span:nth-child(6) {
-  --giro: 175deg;
-  top: 18%;
-  left: 22%;
-  width: 18px;
-  background-color: #E07A98;
-  animation-duration: 18s;
-  animation-delay: -5s;
-}
-.decoracion span:nth-child(7) {
-  --giro: 92deg;
-  top: 87%;
-  left: 25%;
-  width: 13px;
-  background-color: #F2C14E;
-  animation-duration: 11s;
-  animation-delay: -3s;
-}
-.decoracion span:nth-child(8) {
-  --giro: 38deg;
-  top: 90%;
-  left: 79%;
-  width: 12px;
-  background-color: #8CB866;
-  animation-duration: 11s;
-  animation-delay: -3s;
-}
-.decoracion span:nth-child(9) {
-  --giro: 177deg;
-  top: 25%;
-  left: 61%;
+  --giro: 97deg;
+  top: 15%;
+  left: 11%;
   width: 13px;
   background-color: #7FB3D5;
-  animation-duration: 18s;
-  animation-delay: -6s;
-}
-.decoracion span:nth-child(10) {
-  --giro: 130deg;
-  top: 53%;
-  left: 84%;
-  width: 11px;
-  background-color: #FFFFFF;
-  animation-duration: 18s;
-  animation-delay: -2s;
-}
-.decoracion span:nth-child(11) {
-  --giro: 17deg;
-  top: 6%;
-  left: 12%;
-  width: 11px;
-  background-color: #B26B26;
   animation-duration: 13s;
   animation-delay: -1s;
 }
-.decoracion span:nth-child(12) {
-  --giro: 154deg;
-  top: 19%;
-  left: 43%;
-  width: 18px;
-  background-color: #E07A98;
-  animation-duration: 16s;
-  animation-delay: -3s;
-}
-.decoracion span:nth-child(13) {
-  --giro: 52deg;
-  top: 30%;
-  left: 94%;
+.decoracion span:nth-child(4) {
+  --giro: 53deg;
+  top: 90%;
+  left: 5%;
   width: 14px;
-  background-color: #F2C14E;
-  animation-duration: 10s;
+  background-color: #FFFFFF;
+  animation-duration: 13s;
+  animation-delay: -6s;
+}
+.decoracion span:nth-child(5) {
+  --giro: 1deg;
+  top: 2%;
+  left: 72%;
+  width: 17px;
+  background-color: #B26B26;
+  animation-duration: 11s;
+  animation-delay: -8s;
+}
+.decoracion span:nth-child(6) {
+  --giro: 65deg;
+  top: 16%;
+  left: 53%;
+  width: 14px;
+  background-color: #E07A98;
+  animation-duration: 11s;
   animation-delay: -1s;
 }
-.decoracion span:nth-child(14) {
-  --giro: 59deg;
-  top: 40%;
-  left: 16%;
-  width: 20px;
-  background-color: #8CB866;
-  animation-duration: 15s;
-  animation-delay: -4s;
+.decoracion span:nth-child(7) {
+  --giro: 178deg;
+  top: 72%;
+  left: 41%;
+  width: 15px;
+  background-color: #F2C14E;
+  animation-duration: 16s;
+  animation-delay: -6s;
 }
-.decoracion span:nth-child(15) {
-  --giro: 101deg;
-  top: 92%;
-  left: 1%;
-  width: 12px;
+.decoracion span:nth-child(8) {
+  --giro: 25deg;
+  top: 88%;
+  left: 46%;
+  width: 11px;
+  background-color: #8CB866;
+  animation-duration: 14s;
+  animation-delay: -2s;
+}
+.decoracion span:nth-child(9) {
+  --giro: 104deg;
+  top: 75%;
+  left: 88%;
+  width: 19px;
   background-color: #7FB3D5;
-  animation-duration: 10s;
+  animation-duration: 14s;
   animation-delay: -3s;
 }
-.decoracion span:nth-child(16) {
-  --giro: 140deg;
-  top: 91%;
-  left: 24%;
-  width: 17px;
+.decoracion span:nth-child(10) {
+  --giro: 65deg;
+  top: 17%;
+  left: 3%;
+  width: 12px;
   background-color: #FFFFFF;
   animation-duration: 19s;
-  animation-delay: -7s;
+  animation-delay: -2s;
 }
-.decoracion span:nth-child(17) {
-  --giro: 111deg;
-  top: 42%;
-  left: 93%;
-  width: 15px;
+.decoracion span:nth-child(11) {
+  --giro: 99deg;
+  top: 23%;
+  left: 12%;
+  width: 14px;
   background-color: #B26B26;
+  animation-duration: 13s;
+  animation-delay: -3s;
+}
+.decoracion span:nth-child(12) {
+  --giro: 79deg;
+  top: 39%;
+  left: 45%;
+  width: 16px;
+  background-color: #E07A98;
+  animation-duration: 17s;
+  animation-delay: -6s;
+}
+.decoracion span:nth-child(13) {
+  --giro: 60deg;
+  top: 44%;
+  left: 87%;
+  width: 19px;
+  background-color: #F2C14E;
+  animation-duration: 18s;
+  animation-delay: -8s;
+}
+.decoracion span:nth-child(14) {
+  --giro: 89deg;
+  top: 85%;
+  left: 92%;
+  width: 13px;
+  background-color: #8CB866;
+  animation-duration: 14s;
+  animation-delay: -8s;
+}
+.decoracion span:nth-child(15) {
+  --giro: 144deg;
+  top: 89%;
+  left: 38%;
+  width: 15px;
+  background-color: #7FB3D5;
   animation-duration: 15s;
+  animation-delay: -2s;
+}
+.decoracion span:nth-child(16) {
+  --giro: 86deg;
+  top: 75%;
+  left: 54%;
+  width: 12px;
+  background-color: #FFFFFF;
+  animation-duration: 19s;
   animation-delay: -5s;
 }
+.decoracion span:nth-child(17) {
+  --giro: 47deg;
+  top: 34%;
+  left: 3%;
+  width: 17px;
+  background-color: #B26B26;
+  animation-duration: 13s;
+  animation-delay: -2s;
+}
 .decoracion span:nth-child(18) {
-  --giro: 64deg;
-  top: 53%;
-  left: 10%;
-  width: 18px;
+  --giro: 107deg;
+  top: 6%;
+  left: 82%;
+  width: 15px;
   background-color: #E07A98;
-  animation-duration: 14s;
+  animation-duration: 12s;
   animation-delay: -2s;
 }
 
@@ -2405,7 +2405,7 @@ p {
   font-weight: 800;
   white-space: nowrap;
 }
-.persona--abril {
+.persona--valentin {
   background-color: var(--plaza-fondo);
   color: var(--plaza);
 }
@@ -2839,7 +2839,7 @@ p {
   font-size: 0.8rem;
   font-weight: 800;
 }
-.evento__avatar--abril {
+.evento__avatar--valentin {
   background-color: var(--plaza-fondo);
   color: var(--plaza);
 }

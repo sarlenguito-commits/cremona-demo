@@ -63,7 +63,7 @@ const nombreTurno = (t) => (t === "manana" ? "mañana" : "tarde");
 const nuevoId = (prefijo) => `${prefijo}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 const masNuevoPrimero = (a, b) => b.cuando.localeCompare(a.cuando);
 const empleadas = () => Object.keys(PERSONAS).filter((id) => PERSONAS[id].rol === "empleada");
-const paraQuien = (para) => (para === "todas" ? "todas" : nombre(para));
+const paraQuien = (para) => (para === "todas" ? "todo el equipo" : nombre(para));
 // Tareas puntuales de Carolina ("agenda"). "todas" = todas las del local (o todas si no tiene local).
 const agendaPara = (a, persona) => a.para === persona || (a.para === "todas" && (!a.local || personasDe(a.local).includes(persona)));
 const agendaDe = (fecha, persona = null) => estado.agenda.filter((a) => a.fecha === fecha && (!persona || agendaPara(a, persona)));
@@ -1258,7 +1258,7 @@ function vistaTareas() {
 
 async function borrarTarea(id) {
     const t = cal.todasLasTareas().find((x) => x.id === id);
-    if (!confirm(`¿Quitar "${t?.nombre}"? Deja de aparecer para las chicas (el historial se conserva).`)) return;
+    if (!confirm(`¿Quitar "${t?.nombre}"? Deja de aparecer para el equipo (el historial se conserva).`)) return;
     await datos.borrarTareaExtra(id);
     aviso("Tarea quitada");
 }
@@ -2345,7 +2345,7 @@ function vistaRecordatorios() {
     return `
     <section class="encabezado">
         <h1>🔔 Recordatorios</h1>
-        <p>Elegí para quién es: le aparece en su "Hoy" (a Carolina, en Actividad). Todas los ven, y los pueden editar o borrar quien lo anotó y a quien va dirigido.</p>
+        <p>Elegí para quién es: le aparece en su "Hoy" (a Carolina, en Actividad). Todo el equipo los ve, y los pueden editar o borrar quien lo anotó y a quien va dirigido.</p>
     </section>
     <form class="formulario" id="form-recordatorio" data-rec-form="nuevo">
         <h2>➕ Nuevo recordatorio</h2>

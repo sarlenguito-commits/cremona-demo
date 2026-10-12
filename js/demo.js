@@ -8,6 +8,9 @@ import { CHECKLISTS } from "./config.js";
 import * as cal from "./calendario.js";
 
 const MARCA = "cr-demo-sembrado";
+// Si cambian las personas o los datos de ejemplo, se sube la versión: los navegadores que ya tenían la demo
+// borran sus datos de prueba y cargan los nuevos una vez. (2 = "Abril" pasó a ser "Valentín", 12/10/2026)
+const VERSION = "2";
 const guardar = (clave, docs) => localStorage.setItem(clave, JSON.stringify(Object.fromEntries(docs.map((d) => [d.id, d]))));
 
 // Fecha y hora (ISO) de un día a una hora dada.
@@ -54,7 +57,15 @@ function registros(hoy) {
 
 export function sembrarDemo() {
     try {
-        if (localStorage.getItem(MARCA)) return;
+        const previa = localStorage.getItem(MARCA);
+        if (previa === VERSION) return;
+        if (previa) {
+            // Datos de una versión anterior: se borran (menos la clave del equipo ya puesta) y se cargan los nuevos.
+            Object.keys(localStorage)
+                .filter((k) => k.startsWith("cr-demo-") && k !== "cr-demo-equipo" && k !== "cr-demo-usuario")
+                .forEach((k) => localStorage.removeItem(k));
+            if (localStorage.getItem("cr-demo-usuario") === "abril") localStorage.removeItem("cr-demo-usuario");
+        }
         const hoy = cal.ahora();
         const ayer = ayerHabil(hoy);
         const iso = cal.iso;
@@ -63,8 +74,8 @@ export function sembrarDemo() {
         guardar("cr-demo-registros", registros(hoy));
 
         guardar("cr-demo-notasTurno", [
-            { id: "turno-demo-1", local: "plaza", fecha: iso(ayer), cuando: a_las(ayer, 15, 50), turno: "manana", persona: "abril",
-              texto: "Quedaron 2 porciones de lemon pie y media chocotorta en la heladera de atrás. La leche de almendras se terminó.", uid: "demo-abril" },
+            { id: "turno-demo-1", local: "plaza", fecha: iso(ayer), cuando: a_las(ayer, 15, 50), turno: "manana", persona: "valentin",
+              texto: "Quedaron 2 porciones de lemon pie y media chocotorta en la heladera de atrás. La leche de almendras se terminó.", uid: "demo-valentin" },
             { id: "turno-demo-2", local: "centro", fecha: iso(hoy), cuando: a_las(hoy, 9, 20), turno: "manana", persona: "mica",
               texto: "La cafetera hace un ruido raro al calentar la leche: ya le avisé a Carolina. La señora de la torta de cumpleaños pasa a las 18.", uid: "demo-mica" }
         ]);
@@ -72,7 +83,7 @@ export function sembrarDemo() {
         guardar("cr-demo-agenda", [
             { id: "agenda-demo-1", fecha: iso(hoy), local: "centro", para: "todas", cuando: dias(-1),
               texto: "Dejar lugar en la heladera: llegan las tortas para el cumpleaños de las 18", uid: "demo-carolina" },
-            { id: "agenda-demo-2", fecha: iso(cal.sumarDias(hoy, 3)), local: "plaza", para: "abril", cuando: dias(-1),
+            { id: "agenda-demo-2", fecha: iso(cal.sumarDias(hoy, 3)), local: "plaza", para: "valentin", cuando: dias(-1),
               texto: "Armar la pizarra nueva con la torta de la semana", uid: "demo-carolina" }
         ]);
 
@@ -82,7 +93,7 @@ export function sembrarDemo() {
               estado: "pendiente", persona: "mica", quien: "mica", creado: dias(-2), actualizado: dias(-2), uid: "demo-mica" },
             { id: "pedido-demo-2", cliente: "Rodrigo", telefono: "11 5555-0202", producto: "Docena de alfajores de maicena", cantidad: 2,
               pago: "Efectivo", nota: "", local: "plaza", pagoEstado: "total", sena: 0, total: 18000,
-              estado: "llego", persona: "abril", quien: "abril", creado: dias(-3), actualizado: dias(-1), uid: "demo-abril" },
+              estado: "llego", persona: "valentin", quien: "valentin", creado: dias(-3), actualizado: dias(-1), uid: "demo-valentin" },
             { id: "pedido-demo-3", cliente: "Paula", telefono: "", producto: "Cheesecake de frutos rojos entero", cantidad: 1,
               pago: "", nota: "Lo quiere para el sábado", local: "plaza", pagoEstado: "nada", sena: 0, total: 0,
               estado: "pendiente", persona: "juli", quien: "juli", creado: dias(-1), actualizado: dias(-1), uid: "demo-juli" }
@@ -105,8 +116,8 @@ export function sembrarDemo() {
         guardar("cr-demo-recordatorios", [
             { id: "rec-demo-1", persona: "mica", texto: "Comprar velitas de cumpleaños antes del viernes", duracion: "1s", fecha: "",
               vence: dias(6), autora: "carolina", creado: dias(-1), editado: "", uid: "demo-carolina" },
-            { id: "rec-demo-2", persona: "juli", texto: "Devolverle a Abril el táper de las medialunas", duracion: "sin", fecha: "",
-              vence: "", autora: "abril", creado: dias(-2), editado: "", uid: "demo-abril" },
+            { id: "rec-demo-2", persona: "juli", texto: "Devolverle a Valentín el táper de las medialunas", duracion: "sin", fecha: "",
+              vence: "", autora: "valentin", creado: dias(-2), editado: "", uid: "demo-valentin" },
             { id: "rec-demo-3", persona: "carolina", texto: "Llamar al técnico por la cafetera del Centro", duracion: "3d", fecha: "",
               vence: dias(2), autora: "mica", creado: dias(0), editado: "", uid: "demo-mica" }
         ]);
@@ -128,8 +139,8 @@ export function sembrarDemo() {
             plaza: { crema: 7, leche: 12, cafe: 2, manteca: 3, harina: 15, azucar: 6, huevos: 4, vasos: 2 }
         };
         guardar("cr-demo-stock", Object.entries(stock).flatMap(([local, cosas]) => Object.entries(cosas).map(([insumo, cantidad], i) => ({
-            id: `${local}_${insumo}`, local, insumo, cantidad, persona: local === "centro" ? "mica" : "abril",
-            actualizado: a_las(ayer, 9 + i, 10), uid: `demo-${local === "centro" ? "mica" : "abril"}`
+            id: `${local}_${insumo}`, local, insumo, cantidad, persona: local === "centro" ? "mica" : "valentin",
+            actualizado: a_las(ayer, 9 + i, 10), uid: `demo-${local === "centro" ? "mica" : "valentin"}`
         }))));
 
         // Producción de hoy: con horas relativas a ahora (una urgente, una cerca, una tranquila y una lista).
@@ -148,7 +159,7 @@ export function sembrarDemo() {
             encargo("prod-demo-3", "centro", 200, "Lemon pie entero", 1, "Para llevar, en caja", "carolina"),
             encargo("prod-demo-4", "centro", -60, "Alfajores de maicena", 24, "", "juli", true),
             encargo("prod-demo-5", "plaza", 35, "Cheesecake de frutos rojos", 1, "Sin base de galletita", "mica"),
-            encargo("prod-demo-6", "plaza", 150, "Budín de limón", 2, "", "abril")
+            encargo("prod-demo-6", "plaza", 150, "Budín de limón", 2, "", "valentin")
         ]);
 
         // Cierres de caja de ayer: uno cerró bien y otro con faltante.
@@ -165,7 +176,7 @@ export function sembrarDemo() {
             { id: "nota-demo-duena", texto: "Pedir presupuesto de crema a otro proveedor: subió mucho este mes.", cuando: dias(-1), uid: "demo-carolina" }
         ]);
 
-        localStorage.setItem(MARCA, "1");
+        localStorage.setItem(MARCA, VERSION);
     } catch {
         // Sin almacenamiento (ventana privada estricta): la demo arranca vacía.
     }
