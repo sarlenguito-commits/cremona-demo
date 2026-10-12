@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#B23A5E">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="Cremona · demo de la app de tareas del equipo (datos de prueba).">
+    <title>Cremona · Tareas (demo)</title>
+    <!-- Vista previa al compartir el link (WhatsApp) -->
+    <meta property="og:title" content="Cremona · demo">
+    <meta property="og:description" content="La app de tareas del equipo del barcito. Datos de prueba: probala sin miedo.">
+    <meta property="og:image" content="https://sarlenguito-commits.github.io/cremona-demo/assets/img/compartir.png">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Yeseva+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles/style.css">
+    <!-- Aplica el tema guardado antes de dibujar la página (evita un parpadeo claro/oscuro) -->
+    <script>
+        try { const t = localStorage.getItem("cr-tema"); if (t) document.documentElement.dataset.tema = t; } catch {}
+    </script>
+</head>
+
+<body>
+    <!-- Decoración del fondo: granas de colores que flotan. Solo visual. -->
+    <div class="decoracion" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div id="app">
+        <p class="cargando">Cargando…</p>
+    </div>
+    <script type="module" src="js/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Cremona">
+  <!-- Blonda (papel de torta) alrededor -->
+  <g fill="#F6C7D3">
+    <circle cx="60" cy="60" r="52"/>
+    <g id="festones">
+      <circle cx="60" cy="8" r="7"/><circle cx="86" cy="15" r="7"/><circle cx="105" cy="34" r="7"/>
+      <circle cx="112" cy="60" r="7"/><circle cx="105" cy="86" r="7"/><circle cx="86" cy="105" r="7"/>
+      <circle cx="60" cy="112" r="7"/><circle cx="34" cy="105" r="7"/><circle cx="15" cy="86" r="7"/>
+      <circle cx="8" cy="60" r="7"/><circle cx="15" cy="34" r="7"/><circle cx="34" cy="15" r="7"/>
+    </g>
+  </g>
+  <circle cx="60" cy="60" r="44" fill="#FFF8F6"/>
+  <!-- Pocillo del cupcake -->
+  <path d="M36 66h48l-6 30H42z" fill="#6B3A2E"/>
+  <path d="M46 66l2 30M54 66l1 30M62 66v30M70 66l-1 30M77 66l-2 30" stroke="#8E5544" stroke-width="2.4"/>
+  <!-- Crema en espiral -->
+  <path d="M33 67c-4-10 6-15 12-13 0-11 12-16 19-10 6-6 18-1 16 9 7-1 12 8 7 14z" fill="#B23A5E"/>
+  <path d="M41 60c8 3 30 3 40-2M49 51c6 2 18 2 24-1" stroke="#E07A98" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Cereza -->
+  <circle cx="64" cy="35" r="6.5" fill="#86203F"/>
+  <path d="M65 29c1-6 5-9 9-10" stroke="#5F8F3A" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <circle cx="62" cy="33" r="1.8" fill="#FFFFFF" opacity="0.7"/>
+  <!-- Granas -->
+  <g stroke-width="2.6" stroke-linecap="round">
+    <path d="M47 58l3-2" stroke="#F2C14E"/><path d="M72 54l3 1" stroke="#7FB3D5"/><path d="M60 62l2 2" stroke="#FFFFFF"/>
+    <path d="M78 62l2-2" stroke="#F2C14E"/><path d="M53 48l1 3" stroke="#FFFFFF"/>
+  </g>
+</svg>
